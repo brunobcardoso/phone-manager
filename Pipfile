@@ -1,0 +1,18 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "==2.1.1"
+djangorestframework = "==3.8.2"
+dj-database-url = "==0.5.0"
+dj-static = "==0.0.6"
+python-decouple = "==3.1"
+
+[dev-packages]
+django-extensions = "==2.1.2"
+ipdb = "==0.11"
+
+[requires]
+python_version = "3.7"

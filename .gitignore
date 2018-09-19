@@ -8,3 +8,6 @@
 .env
 tmp
 db.sqlite3
+.pytest_cache/
+htmlcov/
+.coverage

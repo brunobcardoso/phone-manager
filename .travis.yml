@@ -1,0 +1,18 @@
+language: python
+python: 3.7
+dist: xenial
+sudo: true
+
+install:
+    - pip install pipenv
+    - pipenv install --dev --skip-lock
+
+before_script:
+    - cp .env.example .env
+    - python manage.py migrate
+
+script:
+    - py.test --cov-report term-missing --cov core/ -v
+
+after_success:
+    - coveralls

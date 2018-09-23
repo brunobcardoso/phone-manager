@@ -9,7 +9,7 @@ class TestCall:
         call = Call.objects.create(id='42', source='99988526423', destination='9993468278')
         assert isinstance(call, Call)
         assert call.call_id == call.id
-        assert call.__str__() == f'{call.id}, {call.source}, {call.destination}'
+        assert call.__str__() == f'{call.id}'
 
 
 @pytest.mark.django_db

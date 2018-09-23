@@ -16,7 +16,7 @@ class Call(models.Model):
         return self.id
 
     def __str__(self):
-        return f'{self.id}, {self.source}, {self.destination}'
+        return f'{self.id}'
 
     class Meta:
         verbose_name = 'call'

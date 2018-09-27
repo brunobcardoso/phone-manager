@@ -5,8 +5,14 @@ from core.models import Call, Record
 
 class CallSerializer(serializers.ModelSerializer):
     call_id = serializers.IntegerField(required=True)
-    source = serializers.CharField(required=True, validators=[Call.phone_validator])
-    destination = serializers.CharField(required=True, validators=[Call.phone_validator])
+    source = serializers.CharField(
+        required=True,
+        validators=[Call.phone_validator]
+    )
+    destination = serializers.CharField(
+        required=True,
+        validators=[Call.phone_validator]
+    )
 
     def validate(self, attrs):
         call_data = {

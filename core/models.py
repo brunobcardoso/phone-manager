@@ -5,8 +5,9 @@ from django.db import models
 class Call(models.Model):
     phone_validator = RegexValidator(
         regex=r'(^[1-9]{2})([1-9]\d{7,8}$)',
-        message='Invalid phone number. Valid format is composed of 10 or 11 digits. '
-                'ie: AAXXXXXXXXX, where AA is the area code and XXXXXXXXX is the phone number')
+        message='Invalid phone number. Valid format is composed of 10 or 11 '
+                'digits. ie: AAXXXXXXXXX, where AA is the area code and '
+                'XXXXXXXXX is the phone number')
 
     id = models.PositiveIntegerField(primary_key=True)
     source = models.CharField(max_length=11, validators=[phone_validator])
@@ -25,7 +26,9 @@ class Call(models.Model):
 
     def validate_source_destination(self):
         if self.source == self.destination:
-            raise ValidationError(message='Source and Destination cannot be equal')
+            raise ValidationError(
+                message='Source and Destination cannot be equal'
+            )
 
     def save(self, *args, **kwargs):
         self.clean_fields()
@@ -40,8 +43,18 @@ class Record(models.Model):
         (END, 'End')
     )
 
-    call = models.ForeignKey(Call, related_name='records', on_delete=models.CASCADE)
-    type = models.CharField(max_length=5, choices=CALL_TYPES, default=START)
+    call = models.ForeignKey(
+        Call,
+        related_name='records',
+        on_delete=models.CASCADE
+    )
+
+    type = models.CharField(
+        max_length=5,
+        choices=CALL_TYPES,
+        default=START
+    )
+
     timestamp = models.DateTimeField()
 
     def __str__(self):
@@ -49,7 +62,8 @@ class Record(models.Model):
 
     @property
     def start_call_exists(self):
-        return Record.objects.filter(call=self.call, type=Record.START).exists()
+        return Record.objects.filter(
+            call=self.call, type=Record.START).exists()
 
     class Meta:
         unique_together = ("call", "type")
@@ -58,13 +72,20 @@ class Record(models.Model):
 
     def validate_exists_start_record_before_end_record(self):
         if self.type == Record.END and not self.start_call_exists:
-            raise ValidationError(message='There is no start record for this call')
+            raise ValidationError(
+                message='There is no start record for this call'
+            )
 
     def validate_timestamp_end_record_after_timestamp_start_record(self):
         if self.type == Record.END:
-            start_record = Record.objects.get(call=self.call, type=Record.START)
+            start_record = Record.objects.get(
+                call=self.call,
+                type=Record.START)
             if self.timestamp < start_record.timestamp:
-                raise ValidationError(message='Timestamp of end record cannot be less than start record')
+                raise ValidationError(
+                    message='Timestamp of end record cannot be less than '
+                            'start record'
+                )
 
     def save(self, *args, **kwargs):
         self.clean_fields()

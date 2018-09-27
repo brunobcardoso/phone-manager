@@ -33,7 +33,7 @@ class TestCall:
                 destination='99988526423'
             )
         assert 'source' in str(excinfo)
-        assert 'Invalid phone number. Valid format is composed of 10 or 11 digits.' in str(excinfo)
+        assert 'Invalid phone number.' in str(excinfo)
 
     def test_invalid_phone_number_more_than_11_digits(self):
         with pytest.raises(ValidationError) as excinfo:
@@ -43,7 +43,7 @@ class TestCall:
                 destination='99988526423'
             )
         assert 'source' in str(excinfo)
-        assert 'Invalid phone number. Valid format is composed of 10 or 11 digits.' in str(excinfo)
+        assert 'Invalid phone number.' in str(excinfo)
 
     def test_invalid_phone_number_format(self):
         with pytest.raises(ValidationError) as excinfo:
@@ -53,7 +53,7 @@ class TestCall:
                 destination='99988526423'
             )
         assert 'source' in str(excinfo)
-        assert 'Invalid phone number. Valid format is composed of 10 or 11 digits.' in str(excinfo)
+        assert 'Invalid phone number.' in str(excinfo)
 
 
 @pytest.mark.django_db
@@ -98,7 +98,8 @@ class TestRecord:
             type=Record.START,
             timestamp='2016-02-29T12:00:00.0Z'
         )
-        assert record.__str__() == f'{record.call}, {record.type}, {record.timestamp}'
+        assert record.__str__() == (f'{record.call}, {record.type}, '
+                                    f'{record.timestamp}')
 
     def test_record_start_call_exists(self, call):
         Record.objects.create(
@@ -135,4 +136,5 @@ class TestRecord:
                 type=Record.END,
                 timestamp='2016-02-20T12:00:00.0Z'
             )
-        assert 'Timestamp of end record cannot be less than start record' in str(excinfo)
+        error_msg = 'Timestamp of end record cannot be less than start record'
+        assert error_msg in str(excinfo)

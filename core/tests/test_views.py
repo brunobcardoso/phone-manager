@@ -1,5 +1,4 @@
 import pytest
-from django.utils import timezone
 
 from core.models import Call, Record
 

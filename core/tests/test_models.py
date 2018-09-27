@@ -1,7 +1,7 @@
 import pytest
 from django.core.validators import ValidationError
 
-from core.models import Call, Record
+from core.models import Call, Record, Bill
 
 
 @pytest.mark.django_db
@@ -101,3 +101,15 @@ class TestRecord:
             )
         error_msg = 'Timestamp of end record cannot be less than start record'
         assert error_msg in str(excinfo)
+
+@pytest.mark.django_db
+class TestBillModel:
+    def test_bill_creation(self, make_call_record):
+        call_record = make_call_record(
+            start_timestamp='2016-02-29T12:00:00.0Z',
+            end_timestamp='2016-02-29T14:00:00.0Z'
+        )
+        bill = Bill.objects.create(call=call_record)
+        assert isinstance(bill, Bill)
+        assert bill.__str__() == (f'call_id: {call_record.id} '
+                                  f'- price: {bill.price}')

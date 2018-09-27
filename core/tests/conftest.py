@@ -41,3 +41,24 @@ def make_start_record(make_call):
         return start_record
 
     return _make_start_record
+
+
+@pytest.fixture()
+def make_call_record(make_call):
+    start = timezone.now().isoformat()
+    end = (timezone.now() + timezone.timedelta(minutes=5)).isoformat()
+    def _make_call_record(start_timestamp=start, end_timestamp=end):
+        call = make_call()
+        models.Record.objects.create(
+            call=call,
+            type=models.Record.START,
+            timestamp=start_timestamp
+        )
+        models.Record.objects.create(
+            call=call,
+            type=models.Record.END,
+            timestamp=end_timestamp
+        )
+        return call
+
+    return _make_call_record

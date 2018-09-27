@@ -40,6 +40,10 @@ class RecordManager(models.Manager):
     def start_call_exists(self, call):
         return self.filter(call=call, type=Record.START).exists()
 
+    def timestamp(self, type, call_id):
+        timestamp = self.get(call__id=call_id, type=type).timestamp
+        return timestamp
+
 
 class Record(models.Model):
     START, END = ('start', 'end')
@@ -95,3 +99,28 @@ class Record(models.Model):
         self.validate_exists_start_record_before_end_record()
         self.validate_timestamp_end_record_after_timestamp_start_record()
         super(Record, self).save(*args, **kwargs)
+
+
+class Bill(models.Model):
+    call = models.OneToOneField(Call, on_delete=models.CASCADE)
+    price = models.DecimalField(max_digits=6, decimal_places=2, null=True)
+    start = models.DateTimeField()
+    end = models.DateTimeField()
+
+    def __str__(self):
+        return f'call_id: {self.call} - price: {self.price}'
+
+    class Meta:
+        verbose_name = 'bill'
+        verbose_name_plural = 'bills'
+
+    def save(self, *args, **kwargs):
+        self.start = Record.objects.timestamp(
+            call_id=self.call.id,
+            type=Record.START
+        )
+        self.end = Record.objects.timestamp(
+            call_id=self.call.id,
+            type=Record.END
+        )
+        super(Bill, self).save(*args, **kwargs)

@@ -101,22 +101,9 @@ class TestRecord:
         assert record.__str__() == (f'{record.call}, {record.type}, '
                                     f'{record.timestamp}')
 
-    def test_record_start_call_exists(self, call):
-        Record.objects.create(
-            call=call,
-            type=Record.START,
-            timestamp='2016-02-29T12:00:00.0Z'
-        )
-        end_record = Record.objects.create(
-            call=call,
-            type=Record.END,
-            timestamp='2016-02-29T12:00:00.0Z'
-        )
-        assert end_record.start_call_exists
-
     def test_invalid_end_record_without_corresponding_start_record(self, call):
         with pytest.raises(ValidationError) as excinfo:
-            record = Record.objects.create(
+            Record.objects.create(
                 call=call,
                 type=Record.END,
                 timestamp='2016-02-29T12:00:00.0Z'

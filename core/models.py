@@ -36,6 +36,11 @@ class Call(models.Model):
         super(Call, self).save(*args, **kwargs)
 
 
+class RecordManager(models.Manager):
+    def start_call_exists(self, call):
+        return self.filter(call=call, type=Record.START).exists()
+
+
 class Record(models.Model):
     START, END = ('start', 'end')
     CALL_TYPES = (
@@ -57,13 +62,10 @@ class Record(models.Model):
 
     timestamp = models.DateTimeField()
 
+    objects = RecordManager()
+
     def __str__(self):
         return f'{self.call}, {self.type}, {self.timestamp}'
-
-    @property
-    def start_call_exists(self):
-        return Record.objects.filter(
-            call=self.call, type=Record.START).exists()
 
     class Meta:
         unique_together = ("call", "type")
@@ -71,10 +73,11 @@ class Record(models.Model):
         verbose_name_plural = 'records'
 
     def validate_exists_start_record_before_end_record(self):
-        if self.type == Record.END and not self.start_call_exists:
-            raise ValidationError(
-                message='There is no start record for this call'
-            )
+        if self.type == Record.END:
+            if not Record.objects.start_call_exists(self.call):
+                raise ValidationError(
+                    message='There is no start record for this call'
+                )
 
     def validate_timestamp_end_record_after_timestamp_start_record(self):
         if self.type == Record.END:

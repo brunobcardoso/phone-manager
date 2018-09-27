@@ -31,7 +31,6 @@ class TestStartRecordSerializer:
         serializer = StartRecordSerializer(data=data)
         serializer.is_valid()
         assert serializer.save()
-        assert Record.start_call_exists
 
 
 @pytest.mark.django_db
@@ -75,4 +74,3 @@ class TestEndRecordSerializer:
         serializer = EndRecordSerializer(data=data)
         serializer.is_valid()
         assert serializer.save()
-        assert Record.start_call_exists

@@ -16,110 +16,86 @@ class TestCall:
         assert call.call_id == call.id
         assert call.__str__() == f'{call.id}'
 
-    def test_source_and_destination_cannot_be_equal(self):
+    def test_source_and_destination_cannot_be_equal(self, make_call):
         with pytest.raises(expected_exception=ValidationError) as excinfo:
-            Call.objects.create(
-                id='42',
+            make_call(
                 source='99988526423',
                 destination='99988526423'
             )
         assert 'Source and Destination cannot be equal' in str(excinfo)
 
-    def test_invalid_phone_number_less_than_10_digits(self):
+    def test_invalid_phone_number_less_than_10_digits(self, make_call):
         with pytest.raises(ValidationError) as excinfo:
-            Call.objects.create(
-                id='42',
-                source='999885269',
-                destination='99988526423'
+            make_call(
+                source='99988526',
+                destination='99988'
             )
         assert 'source' in str(excinfo)
+        assert 'destination' in str(excinfo)
         assert 'Invalid phone number.' in str(excinfo)
 
-    def test_invalid_phone_number_more_than_11_digits(self):
+    def test_invalid_phone_number_more_than_11_digits(self, make_call):
         with pytest.raises(ValidationError) as excinfo:
-            Call.objects.create(
-                id='42',
+            make_call(
                 source='9998852600000',
-                destination='99988526423'
+                destination='999885264230000'
             )
         assert 'source' in str(excinfo)
+        assert 'destination' in str(excinfo)
         assert 'Invalid phone number.' in str(excinfo)
 
-    def test_invalid_phone_number_format(self):
+    def test_invalid_phone_number_format(self, make_call):
         with pytest.raises(ValidationError) as excinfo:
-            Call.objects.create(
-                id='42',
-                source='My phone',
-                destination='99988526423'
+            make_call(
+                source='darth vader',
+                destination='luke skywalker'
             )
         assert 'source' in str(excinfo)
+        assert 'destination' in str(excinfo)
         assert 'Invalid phone number.' in str(excinfo)
 
 
 @pytest.mark.django_db
 class TestRecord:
-    @pytest.fixture()
-    def call(self):
-        call = Call.objects.create(
-            id='42',
-            source='99988526423',
-            destination='9993468278'
-        )
-        return call
-
-    @pytest.fixture()
-    def start_record(self, call):
-        start_record = Record.objects.create(
-            call=call,
-            type=Record.START,
-            timestamp='2016-02-29T12:00:00.0Z'
-        )
-        return start_record
-
-    def test_start_record_creation(self, call):
+    def test_start_record_creation(self, make_call):
         record = Record.objects.create(
-            call=call,
+            call=make_call(),
             type=Record.START,
             timestamp='2016-02-29T12:00:00.0Z'
         )
         assert isinstance(record, Record)
 
-    def test_end_record_creation(self, call, start_record):
+    def test_end_record_creation(self, make_start_record):
+        start_record = make_start_record('2016-02-29T12:00:00.0Z')
         record = Record.objects.create(
-            call=call,
+            call=start_record.call,
             type=Record.END,
             timestamp='2016-02-29T12:00:00.0Z'
         )
         assert isinstance(record, Record)
 
-    def test_record_str(self, call):
-        record = Record.objects.create(
-            call=call,
-            type=Record.START,
-            timestamp='2016-02-29T12:00:00.0Z'
-        )
+    def test_record_str(self, make_start_record):
+        record = make_start_record()
         assert record.__str__() == (f'{record.call}, {record.type}, '
                                     f'{record.timestamp}')
 
-    def test_invalid_end_record_without_corresponding_start_record(self, call):
+    def test_invalid_end_record_when_no_start_record(self, make_call):
         with pytest.raises(ValidationError) as excinfo:
             Record.objects.create(
-                call=call,
+                call=make_call(),
                 type=Record.END,
                 timestamp='2016-02-29T12:00:00.0Z'
             )
         assert 'There is no start record for this call' in str(excinfo)
 
-    def test_invalid_end_record_timestamp(self, call):
+    def test_invalid_end_record_timestamp(self, make_start_record):
         with pytest.raises(ValidationError) as excinfo:
-            Record.objects.create(
-                call=call,
-                type=Record.START,
+            start_record = make_start_record(
                 timestamp='2016-02-29T12:00:00.0Z'
             )
 
             Record.objects.create(
-                call=call,
+                call=start_record.call,
                 type=Record.END,
                 timestamp='2016-02-20T12:00:00.0Z'
             )

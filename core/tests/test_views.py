@@ -32,7 +32,8 @@ class TestRecordsAPI:
         assert Record.objects.count() == 1
         assert response.json() == data
 
-    def test_create_end_record_success(self, client, call_record):
+    def test_create_end_record_success(self, client, make_start_record):
+        make_start_record('2018-09-25T08:20:00Z')
         data = {
             'type': Record.END,
             'call_id': 42,

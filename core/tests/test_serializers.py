@@ -35,40 +35,22 @@ class TestStartRecordSerializer:
 
 @pytest.mark.django_db
 class TestEndRecordSerializer:
-    @pytest.fixture()
-    def call(self):
-        call = Call.objects.create(
-            id='42',
-            source='99988526423',
-            destination='9993468278'
-        )
-        return call
-
-    def test_record_is_valid(self, call):
-        Record.objects.create(
-            call=call,
-            type=Record.START,
-            timestamp=timezone.now().isoformat()
-        )
+    def test_record_is_valid(self, make_start_record):
+        start_record = make_start_record()
         data = {
             'type': Record.END,
-            'call_id': '42',
+            'call_id': start_record.call_id,
             'timestamp': timezone.now().isoformat()
         }
         serializer = EndRecordSerializer(data=data)
 
         assert serializer.is_valid()
 
-    def test_create(self, call):
-        Record.objects.create(
-            call=call,
-            type=Record.START,
-            timestamp=timezone.now().isoformat()
-        )
-        self.call = '42'
+    def test_method_create(self, make_start_record):
+        start_record = make_start_record()
         data = {
             'type': Record.END,
-            'call_id': self.call,
+            'call_id':start_record.call_id,
             'timestamp': timezone.now().isoformat(),
         }
         serializer = EndRecordSerializer(data=data)

@@ -1,3 +1,7 @@
+from datetime import timedelta
+from decimal import Decimal
+
+from django.conf import settings
 from django.core.validators import RegexValidator, ValidationError
 from django.db import models
 
@@ -107,8 +111,72 @@ class Bill(models.Model):
     start = models.DateTimeField()
     end = models.DateTimeField()
 
+    @property
+    def duration(self):
+        total_sec = int((self.end - self.start).total_seconds())
+        hours, rem = divmod(total_sec, 60 * 60)
+        minutes, seconds = divmod(rem, 60)
+        return f'{hours}h{minutes}m{seconds}s'
+
+    @property
+    def total_minutes(self):
+        minutes, _ = divmod((self.end - self.start).total_seconds(), 60)
+        return int(minutes)
+
+    def standard_minutes(self):
+        record_start = self.start
+        record_end = self.end
+
+        reset = {'minute': 0, 'second': 0, 'microsecond': 0}
+        std_start = record_start.replace(hour=settings.STD_HOUR_START, **reset)
+        std_end = record_start.replace(hour=settings.STD_HOUR_END, **reset)
+
+        complete_cycle = record_end.second == record_start.second
+        has_seconds = record_start.second > 0
+        if not complete_cycle and has_seconds:
+            record_start += timedelta(minutes=1)
+
+        if settings.STD_HOUR_START > settings.STD_HOUR_END:
+            std_end += timedelta(days=1)
+
+        minutes = 0
+
+        while record_start < record_end:
+            if std_start <= record_start < std_end:
+                minutes += 1
+            record_start += timedelta(minutes=1)
+            if record_start.day != std_start.day:
+                std_start += timedelta(days=1)
+                std_end += timedelta(days=1)
+        return minutes
+
     def __str__(self):
         return f'call_id: {self.call} - price: {self.price}'
+
+    def standing_charge(self):
+        record_start = self.start
+        std_start_hour = settings.STD_HOUR_START
+        std_end_hour = settings.STD_HOUR_END
+
+        if std_start_hour <= record_start.hour < std_end_hour:
+            st_charge = settings.STD_STANDING_CHARGE
+        else:
+            st_charge = settings.RDC_STANDING_CHARGE
+        return st_charge
+
+    def calculate_price(self):
+        standard_minutes = self.standard_minutes()
+        reduced_minutes = self.total_minutes - standard_minutes
+
+        std_minute_charge = settings.STD_MINUTE_CHARGE
+        rdc_minute_charge = settings.RDC_MINUTE_CHARGE
+        std_price = (Decimal(standard_minutes) * Decimal(std_minute_charge))
+        rdc_price = Decimal(reduced_minutes) * Decimal(rdc_minute_charge)
+
+        standing_charge = self.standing_charge()
+
+        total = std_price + rdc_price + Decimal(standing_charge)
+        return total.quantize(Decimal('0.01'))
 
     class Meta:
         verbose_name = 'bill'
@@ -123,4 +191,5 @@ class Bill(models.Model):
             call_id=self.call.id,
             type=Record.END
         )
+        self.price = self.calculate_price()
         super(Bill, self).save(*args, **kwargs)

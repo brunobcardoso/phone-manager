@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 import pytest
+from django.conf import settings
 from django.core.validators import ValidationError
 
 from core.models import Call, Record, Bill
@@ -102,14 +105,118 @@ class TestRecord:
         error_msg = 'Timestamp of end record cannot be less than start record'
         assert error_msg in str(excinfo)
 
+
 @pytest.mark.django_db
 class TestBillModel:
     def test_bill_creation(self, make_call_record):
         call_record = make_call_record(
-            start_timestamp='2016-02-29T12:00:00.0Z',
-            end_timestamp='2016-02-29T14:00:00.0Z'
+            start_timestamp='2016-02-20T12:00:00.0Z',
+            end_timestamp='2016-02-29T14:07:44.0Z'
         )
         bill = Bill.objects.create(call=call_record)
         assert isinstance(bill, Bill)
         assert bill.__str__() == (f'call_id: {call_record.id} '
                                   f'- price: {bill.price}')
+
+    def test_duration_within_a_day(self, make_bill):
+        bill = make_bill(
+            start_timestamp='2017-12-12T04:57:13Z',
+            end_timestamp='2017-12-12T06:10:56Z'
+        )
+        expected = '1h13m43s'
+        assert bill.duration == expected
+
+    def test_duration_more_than_one_day(self, make_bill):
+        bill = make_bill(
+            start_timestamp='2018-02-28T21:57:13Z',
+            end_timestamp='2018-03-01T22:10:56Z'
+        )
+        expected = '24h13m43s'
+        assert bill.duration == expected
+
+    def test_total_minutes(self, make_bill):
+        bill = make_bill(
+            start_timestamp='2017-12-12T04:57:13Z',
+            end_timestamp='2017-12-12T06:10:56Z'
+        )
+        expected = 73
+        assert bill.total_minutes == expected
+
+    def test_standard_minutes_after_std_end_limit_hour(self, make_bill):
+        """
+        Should not consider minutes after standard end limit hour
+        """
+        bill = make_bill(
+            start_timestamp='2017-12-12T21:57:13Z',
+            end_timestamp='2017-12-12T22:03:55Z'
+        )
+        expected = 2
+        assert bill.standard_minutes() == expected
+
+    def test_standard_minutes_before_std_start_limit_hour(self, make_bill):
+        """
+        Should not consider minutes before standard start limit hour
+        """
+        bill = make_bill(
+            start_timestamp='2017-12-12T05:57:13Z',
+            end_timestamp='2017-12-12T06:05:13Z'
+        )
+        expected = 5
+        assert bill.standard_minutes() == expected
+
+    def test_standard_minutes_minute_cycle(self, make_bill):
+        """
+        Should consider the completed 60 seconds cycle
+        """
+        bill = make_bill(
+            start_timestamp='2017-12-12T21:00:13Z',
+            end_timestamp='2017-12-12T21:10:13Z'
+        )
+        expected = 10
+        assert bill.standard_minutes() == expected
+
+    def test_standard_minutes_different_days(self, make_bill):
+        """
+        Should consider the completed 60 seconds cycle
+        """
+        bill = make_bill(
+            start_timestamp='2018-02-28T21:57:13Z',
+            end_timestamp='2018-03-01T22:10:56Z'
+        )
+        expected = 962
+        assert bill.standard_minutes() == expected
+
+    def test_standing_charge_standard(self, make_bill):
+        bill = make_bill(
+            start_timestamp='2017-12-12T06:00:00Z',
+            end_timestamp='2017-12-12T21:10:13Z'
+        )
+        expected = settings.STD_STANDING_CHARGE
+        assert bill.standing_charge() == expected
+
+    def test_standing_charge_reduced(self, make_bill):
+        bill = make_bill(
+            start_timestamp='2017-12-12T22:00:00Z',
+            end_timestamp='2017-12-12T23:10:13Z'
+        )
+        expected = settings.RDC_STANDING_CHARGE
+        assert bill.standing_charge() == expected
+
+    def test_calculate_price_all_standard(self, make_bill):
+        bill = make_bill(
+            start_timestamp='2017-12-12T11:00:00Z',
+            end_timestamp='2017-12-12T11:05:00Z'
+        )
+        tariff = Decimal(settings.STD_STANDING_CHARGE)
+        price_minute = Decimal('5') * Decimal(settings.STD_MINUTE_CHARGE)
+        expected = round(tariff + price_minute,2)
+        assert bill.price == expected
+
+    def test_calculate_price_all_reduced(self, make_bill):
+        bill = make_bill(
+            start_timestamp='2017-12-12T22:00:00Z',
+            end_timestamp='2017-12-12T23:05:00Z'
+        )
+        expected = Decimal('0.36')
+        assert bill.price == expected
+

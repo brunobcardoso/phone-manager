@@ -4,6 +4,8 @@ from decimal import Decimal
 from django.conf import settings
 from django.core.validators import RegexValidator, ValidationError
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class Call(models.Model):
@@ -193,3 +195,10 @@ class Bill(models.Model):
         )
         self.price = self.calculate_price()
         super(Bill, self).save(*args, **kwargs)
+
+
+@receiver(post_save, sender=Record)
+def create_bill(sender, instance, created, **kwargs):
+    if created and instance.type == Record.END:
+        call = Call.objects.get(id=instance.call_id)
+        Bill.objects.create(call=call)

@@ -47,6 +47,7 @@ def make_start_record(make_call):
 def make_call_record(make_call):
     start = timezone.now().isoformat()
     end = (timezone.now() + timezone.timedelta(minutes=5)).isoformat()
+
     def _make_call_record(start_timestamp=start, end_timestamp=end):
         call = make_call()
         models.Record.objects.create(
@@ -62,12 +63,3 @@ def make_call_record(make_call):
         return call
 
     return _make_call_record
-
-
-@pytest.fixture()
-def make_bill(make_call_record):
-    def _make_bill(start_timestamp, end_timestamp):
-        call_record = make_call_record(start_timestamp, end_timestamp)
-        bill = models.Bill.objects.create(call=call_record)
-        return bill
-    return _make_bill

@@ -6,6 +6,7 @@ from rest_framework.exceptions import ParseError, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core import schemas
 from core.models import Bill
 from core.serializers import (
     BillSerializer,
@@ -18,6 +19,8 @@ class RecordCreate(APIView):
     """
     API endpoint that allow records to be created
     """
+
+    schema = schemas.get_record_schema()
 
     def post(self, request):
         if request.data.get('type') == 'start':
@@ -35,6 +38,8 @@ class BillList(APIView):
     """
     Retrieves the monthly bills for a given telephone number
     """
+
+    schema = schemas.get_bill_schema()
 
     def get(self, request, subscriber):
         reference = request.GET.get('reference')

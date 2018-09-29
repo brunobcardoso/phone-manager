@@ -107,11 +107,23 @@ class Record(models.Model):
         super(Record, self).save(*args, **kwargs)
 
 
+class BillQueryset(models.QuerySet):
+    def get_bills(self, source, m, y):
+        """
+        Returns a queryset with selected bills based on source number and
+        reference period. m(month) and y(year)
+        """
+        return self.filter(call__source=source, end__year=y,
+                           end__month=m).all()
+
+
 class Bill(models.Model):
     call = models.OneToOneField(Call, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=6, decimal_places=2, null=True)
     start = models.DateTimeField()
     end = models.DateTimeField()
+
+    objects = BillQueryset.as_manager()
 
     @property
     def duration(self):

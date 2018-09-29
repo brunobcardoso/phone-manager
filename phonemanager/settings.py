@@ -127,3 +127,18 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+"""
+Phone Manager Pricing rules.
+There are two tariff prices: Standard and Reduced
+"""
+# Standard Time
+STD_HOUR_START = config('STD_HOUR_START', default=6, cast=int)
+STD_HOUR_END = config('STD_HOUR_END', default=22, cast=int)
+# Standard Prices
+STD_STANDING_CHARGE = config('STD_STANDING_CHARGE', default=0.36)
+STD_MINUTE_CHARGE = config('STD_MINUTE_CHARGE', default=0.09)
+
+# Reduced Prices
+RDC_STANDING_CHARGE = config('RDC_STANDING_CHARGE', default=0.36)
+RDC_MINUTE_CHARGE = config('RDC_MINUTE_CHARGE', default=0)

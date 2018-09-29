@@ -1,12 +1,18 @@
 from rest_framework import serializers
 
-from core.models import Call, Record
+from core.models import Call, Record, Bill
 
 
 class CallSerializer(serializers.ModelSerializer):
     call_id = serializers.IntegerField(required=True)
-    source = serializers.CharField(required=True, validators=[Call.phone_validator])
-    destination = serializers.CharField(required=True, validators=[Call.phone_validator])
+    source = serializers.CharField(
+        required=True,
+        validators=[Call.phone_validator]
+    )
+    destination = serializers.CharField(
+        required=True,
+        validators=[Call.phone_validator]
+    )
 
     def validate(self, attrs):
         call_data = {
@@ -72,3 +78,32 @@ class EndRecordSerializer(serializers.ModelSerializer):
         Record.objects.create(**record_data)
 
         return validated_data
+
+
+class BillSerializer(serializers.ModelSerializer):
+    destination = serializers.SerializerMethodField()
+    call_start_date = serializers.SerializerMethodField()
+    call_start_time = serializers.SerializerMethodField()
+    call_duration = serializers.SerializerMethodField()
+    call_price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Bill
+        fields = ('destination', 'call_start_date', 'call_start_time',
+                  'call_duration', 'call_price')
+
+    def get_destination(self, obj):
+        return obj.call.destination
+
+    def get_call_start_date(self, obj):
+        return obj.start.date()
+
+    def get_call_start_time(self, obj):
+        return obj.start.time()
+
+    def get_call_duration(self, obj):
+        return obj.duration
+
+    def get_call_price(self, obj):
+        price = f'R$ {obj.price:.2f}'.replace('.', ',')
+        return price

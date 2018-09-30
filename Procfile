@@ -1,0 +1,1 @@
+web: gunicorn phonemanager.wsgi --log-file -

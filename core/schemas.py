@@ -4,6 +4,9 @@ from rest_framework import schemas
 
 
 def get_record_schema():
+    """
+    Generates a ManualSchema for RecordCreate view
+    """
     record_schema = schemas.ManualSchema(
         fields=[
             coreapi.Field(
@@ -55,6 +58,9 @@ def get_record_schema():
 
 
 def get_bill_schema():
+    """
+    Generates a ManualSchema for BillList view
+    """
     bill_schema = schemas.ManualSchema(fields=[
         coreapi.Field(
             "subscriber",
@@ -71,7 +77,7 @@ def get_bill_schema():
             schema=coreschema.String(
                 description='The reference period (month/year) '
             )
-        ),
+        )
     ])
 
     return bill_schema

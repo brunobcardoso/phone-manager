@@ -9,6 +9,9 @@ from django.dispatch import receiver
 
 
 class Call(models.Model):
+    """
+    Stores a call entry
+    """
     phone_validator = RegexValidator(
         regex=r'(^[1-9]{2})([1-9]\d{7,8}$)',
         message='Invalid phone number. Valid format is composed of 10 or 11 '
@@ -44,14 +47,24 @@ class Call(models.Model):
 
 class RecordManager(models.Manager):
     def start_call_exists(self, call):
+        """
+        Checks if a start call record exists
+        """
         return self.filter(call=call, type=Record.START).exists()
 
     def timestamp(self, type, call_id):
+        """
+        Returns a timestamp of a call record associated with call_id and type
+        criteria
+        """
         timestamp = self.get(call__id=call_id, type=type).timestamp
         return timestamp
 
 
 class Record(models.Model):
+    """
+    Stores start and end records entry, related to :model:`core.Call`
+    """
     START, END = ('start', 'end')
     CALL_TYPES = (
         (START, 'Start'),
@@ -118,6 +131,10 @@ class BillQueryset(models.QuerySet):
 
 
 class Bill(models.Model):
+    """
+    Stores a bill call record entry, related to :model:`core.Call` and
+    :model:`core.Record`
+    """
     call = models.OneToOneField(Call, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=6, decimal_places=2, null=True)
     start = models.DateTimeField()
@@ -211,6 +228,9 @@ class Bill(models.Model):
 
 @receiver(post_save, sender=Record)
 def create_bill(sender, instance, created, **kwargs):
+    """
+    On post save of a end call record, a bill created
+    """
     if created and instance.type == Record.END:
         call = Call.objects.get(id=instance.call_id)
         Bill.objects.create(call=call)

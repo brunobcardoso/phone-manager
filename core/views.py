@@ -17,7 +17,7 @@ from core.serializers import (
 
 class RecordCreate(APIView):
     """
-    API endpoint that allow records to be created
+    Creates a start or end call record.
     """
 
     schema = schemas.get_record_schema()

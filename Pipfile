@@ -19,6 +19,7 @@ ipdb = "==0.11"
 pytest = "==3.8.0"
 pytest-cov = "==2.6.0"
 pytest-django = "==3.4.3"
+pydotplus = "==2.0.1"
 coveralls = "*"
 
 [requires]

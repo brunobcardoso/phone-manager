@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime, time
 from decimal import Decimal
 
 from django.conf import settings
@@ -155,30 +155,20 @@ class Bill(models.Model):
         return int(minutes)
 
     def standard_minutes(self):
-        record_start = self.start
-        record_end = self.end
+        record_start = self.start.replace(second=0, microsecond=0)
+        t_minutes = self.total_minutes
 
-        reset = {'minute': 0, 'second': 0, 'microsecond': 0}
-        std_start = record_start.replace(hour=settings.STD_HOUR_START, **reset)
-        std_end = record_start.replace(hour=settings.STD_HOUR_END, **reset)
-
-        complete_cycle = record_end.second == record_start.second
-        has_seconds = record_start.second > 0
-        if not complete_cycle and has_seconds:
-            record_start += timedelta(minutes=1)
-
-        if settings.STD_HOUR_START > settings.STD_HOUR_END:
-            std_end += timedelta(days=1)
+        std_start = time(hour=settings.STD_HOUR_START)
+        std_end = time(hour=settings.STD_HOUR_END)
 
         minutes = 0
-
-        while record_start < record_end:
-            if std_start <= record_start < std_end:
+        for minute in range(t_minutes):
+            cond_1 = std_start <= record_start.time() < std_end
+            # excluding end_limit
+            cond_2 = (record_start + timedelta(minutes=1)).time() < std_end
+            if all([cond_1, cond_2]):
                 minutes += 1
             record_start += timedelta(minutes=1)
-            if record_start.day != std_start.day:
-                std_start += timedelta(days=1)
-                std_end += timedelta(days=1)
         return minutes
 
     def __str__(self):

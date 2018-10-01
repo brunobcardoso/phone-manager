@@ -168,8 +168,8 @@ The pricing related variables are stored at the project settings file
 
 | Environment Variable  |             Description            | Default |
 |-----------------------|:----------------------------------:|--------:|
-| `STD_HOUR_START`      |      Standard time call start      |      22 |
-| `STD_HOUR_END`        | Standard time call end (excluding) |       6 |
+| `STD_HOUR_START`      |      Standard time call start      |      06 |
+| `STD_HOUR_END`        | Standard time call end (excluding) |      22 |
 | `STD_STANDING_CHARGE` |      Standard Standing charge      |    0.36 |
 | `STD_MINUTE_CHARGE`   |     Standard Call charge/minute    |    0.00 |
 | `RDC_STANDING_CHARGE` |       Reduced Standing charge      |    0.36 |

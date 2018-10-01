@@ -102,21 +102,21 @@ class Record(models.Model):
                     message='There is no start record for this call'
                 )
 
-    def validate_timestamp_end_record_after_timestamp_start_record(self):
+    def validate_timestamp_end_record(self):
         if self.type == Record.END:
             start_record = Record.objects.get(
                 call=self.call,
                 type=Record.START)
-            if self.timestamp < start_record.timestamp:
+            if self.timestamp <= start_record.timestamp:
                 raise ValidationError(
-                    message='Timestamp of end record cannot be less than '
-                            'start record'
+                    message='Timestamp of end record cannot be less or equal '
+                            'to start record'
                 )
 
     def save(self, *args, **kwargs):
         self.clean_fields()
         self.validate_exists_start_record_before_end_record()
-        self.validate_timestamp_end_record_after_timestamp_start_record()
+        self.validate_timestamp_end_record()
         super(Record, self).save(*args, **kwargs)
 
 

@@ -73,7 +73,7 @@ class TestRecord:
         record = Record.objects.create(
             call=start_record.call,
             type=Record.END,
-            timestamp='2016-02-29T12:00:00.0Z'
+            timestamp='2016-02-29T12:02:00.0Z'
         )
         assert isinstance(record, Record)
 
@@ -102,9 +102,24 @@ class TestRecord:
                 type=Record.END,
                 timestamp='2016-02-20T12:00:00.0Z'
             )
-        error_msg = 'Timestamp of end record cannot be less than start record'
+        error_msg = ('Timestamp of end record cannot be less or equal '
+                    'to start record')
         assert error_msg in str(excinfo)
 
+    def test_records_timestamps_cannot_be_equal(self, make_start_record):
+        with pytest.raises(ValidationError) as excinfo:
+            start_record = make_start_record(
+                timestamp='2016-02-29T12:00:00.0Z'
+            )
+
+            Record.objects.create(
+                call=start_record.call,
+                type=Record.END,
+                timestamp='2016-02-29T12:00:00.0Z'
+            )
+        error_msg = ('Timestamp of end record cannot be less or equal to'
+                    ' start record')
+        assert error_msg in str(excinfo)
 
 @pytest.mark.django_db
 class TestBillModel:

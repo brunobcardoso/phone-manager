@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime, time
+from datetime import timedelta, time
 from decimal import Decimal
 
 from django.conf import settings
@@ -60,6 +60,26 @@ class RecordManager(models.Manager):
         timestamp = self.get(call__id=call_id, type=type).timestamp
         return timestamp
 
+    def validade_unique_source_timestamp(self, source, timestamp):
+        """
+        Checks if exists a call record for the same source and timestamp
+        """
+        conflict = Record.objects.filter(call__source=source,
+                                         timestamp=timestamp).exists()
+        if conflict:
+            raise ValidationError('There is already a start record for this '
+                                  'source and timestamp')
+
+    def validade_unique_destination_timestamp(self, destination, timestamp):
+        """
+        Checks if exists a call record for the same destination and timestamp
+        """
+        conflict = Record.objects.filter(call__destination=destination,
+                                         timestamp=timestamp).exists()
+        if conflict:
+            raise ValidationError('There is already a start record for this '
+                                  'destination and timestamp')
+
 
 class Record(models.Model):
     """
@@ -98,25 +118,32 @@ class Record(models.Model):
     def validate_exists_start_record_before_end_record(self):
         if self.type == Record.END:
             if not Record.objects.start_call_exists(self.call):
-                raise ValidationError(
-                    message='There is no start record for this call'
-                )
+                raise ValidationError('There is no start record for this call')
 
     def validate_timestamp_end_record(self):
+        """
+        Checks if end record timestamp is valid (Greater than start record)
+        """
         if self.type == Record.END:
             start_record = Record.objects.get(
                 call=self.call,
                 type=Record.START)
             if self.timestamp <= start_record.timestamp:
-                raise ValidationError(
-                    message='Timestamp of end record cannot be less or equal '
-                            'to start record'
-                )
+                raise ValidationError('Timestamp of end record cannot be less '
+                                      'or equal to start record')
 
     def save(self, *args, **kwargs):
         self.clean_fields()
         self.validate_exists_start_record_before_end_record()
         self.validate_timestamp_end_record()
+        Record.objects.validade_unique_source_timestamp(
+            source=self.call.source,
+            timestamp=self.timestamp
+        )
+        Record.objects.validade_unique_destination_timestamp(
+            destination=self.call.destination,
+            timestamp=self.timestamp
+        )
         super(Record, self).save(*args, **kwargs)
 
 

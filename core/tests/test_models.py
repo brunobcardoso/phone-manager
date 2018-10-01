@@ -103,7 +103,7 @@ class TestRecord:
                 timestamp='2016-02-20T12:00:00.0Z'
             )
         error_msg = ('Timestamp of end record cannot be less or equal '
-                    'to start record')
+                     'to start record')
         assert error_msg in str(excinfo)
 
     def test_records_timestamps_cannot_be_equal(self, make_start_record):
@@ -118,8 +118,29 @@ class TestRecord:
                 timestamp='2016-02-29T12:00:00.0Z'
             )
         error_msg = ('Timestamp of end record cannot be less or equal to'
-                    ' start record')
+                     ' start record')
         assert error_msg in str(excinfo)
+
+    def test_unique_timestamp_for_source(self, make_call_record):
+        with pytest.raises(ValidationError) as excinfo:
+            make_call_record(
+                id='42',
+                source='99988526423',
+                destination='9993468278',
+                start_timestamp='2017-12-12T04:57:13Z',
+                end_timestamp='2017-12-12T06:10:56Z'
+            )
+            make_call_record(
+                id='43',
+                source='99988526423',
+                destination='9993468278',
+                start_timestamp='2017-12-12T04:57:13Z',
+                end_timestamp='2017-12-12T06:10:56Z'
+            )
+        error_msg = ('There is already a start record for this source and '
+                     'timestamp')
+        assert error_msg in str(excinfo)
+
 
 @pytest.mark.django_db
 class TestBillModel:

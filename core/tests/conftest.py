@@ -54,8 +54,9 @@ def make_call_record(make_call):
     settings.RDC_STANDING_CHARGE = 0.36
     settings.STD_MINUTE_CHARGE = 0.09
 
-    def _make_call_record(start_timestamp=start, end_timestamp=end):
-        call = make_call()
+    def _make_call_record(start_timestamp=start, end_timestamp=end, id='42',
+                          source = '99988526423', destination = '9993468278'):
+        call = make_call(id=id, source=source, destination=destination)
         models.Record.objects.create(
             call=call,
             type=models.Record.START,

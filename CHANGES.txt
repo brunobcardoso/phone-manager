@@ -1,6 +1,18 @@
 Phone Manager Changelog
 =======================
 
+Version 0.1.1
+-------------
+
+- Add validation for source and destination timestamp
+Validates if exists a call record for the same source/destination and timestamp
+
+- Fix timestamp validation for endrecord
+Timestamp of end record cannot be equal to start record
+
+- Fix standard_minutes calculator
+It was not considering the completed 60 seconds cycle and limits changes.
+
 Version 0.1
 -----------
 

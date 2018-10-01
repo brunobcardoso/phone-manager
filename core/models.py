@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, time
 from decimal import Decimal
 
 from django.conf import settings
@@ -60,6 +60,26 @@ class RecordManager(models.Manager):
         timestamp = self.get(call__id=call_id, type=type).timestamp
         return timestamp
 
+    def validade_unique_source_timestamp(self, source, timestamp):
+        """
+        Checks if exists a call record for the same source and timestamp
+        """
+        conflict = Record.objects.filter(call__source=source,
+                                         timestamp=timestamp).exists()
+        if conflict:
+            raise ValidationError('There is already a start record for this '
+                                  'source and timestamp')
+
+    def validade_unique_destination_timestamp(self, destination, timestamp):
+        """
+        Checks if exists a call record for the same destination and timestamp
+        """
+        conflict = Record.objects.filter(call__destination=destination,
+                                         timestamp=timestamp).exists()
+        if conflict:
+            raise ValidationError('There is already a start record for this '
+                                  'destination and timestamp')
+
 
 class Record(models.Model):
     """
@@ -98,25 +118,32 @@ class Record(models.Model):
     def validate_exists_start_record_before_end_record(self):
         if self.type == Record.END:
             if not Record.objects.start_call_exists(self.call):
-                raise ValidationError(
-                    message='There is no start record for this call'
-                )
+                raise ValidationError('There is no start record for this call')
 
-    def validate_timestamp_end_record_after_timestamp_start_record(self):
+    def validate_timestamp_end_record(self):
+        """
+        Checks if end record timestamp is valid (Greater than start record)
+        """
         if self.type == Record.END:
             start_record = Record.objects.get(
                 call=self.call,
                 type=Record.START)
-            if self.timestamp < start_record.timestamp:
-                raise ValidationError(
-                    message='Timestamp of end record cannot be less than '
-                            'start record'
-                )
+            if self.timestamp <= start_record.timestamp:
+                raise ValidationError('Timestamp of end record cannot be less '
+                                      'or equal to start record')
 
     def save(self, *args, **kwargs):
         self.clean_fields()
         self.validate_exists_start_record_before_end_record()
-        self.validate_timestamp_end_record_after_timestamp_start_record()
+        self.validate_timestamp_end_record()
+        Record.objects.validade_unique_source_timestamp(
+            source=self.call.source,
+            timestamp=self.timestamp
+        )
+        Record.objects.validade_unique_destination_timestamp(
+            destination=self.call.destination,
+            timestamp=self.timestamp
+        )
         super(Record, self).save(*args, **kwargs)
 
 
@@ -155,30 +182,20 @@ class Bill(models.Model):
         return int(minutes)
 
     def standard_minutes(self):
-        record_start = self.start
-        record_end = self.end
+        record_start = self.start.replace(second=0, microsecond=0)
+        t_minutes = self.total_minutes
 
-        reset = {'minute': 0, 'second': 0, 'microsecond': 0}
-        std_start = record_start.replace(hour=settings.STD_HOUR_START, **reset)
-        std_end = record_start.replace(hour=settings.STD_HOUR_END, **reset)
-
-        complete_cycle = record_end.second == record_start.second
-        has_seconds = record_start.second > 0
-        if not complete_cycle and has_seconds:
-            record_start += timedelta(minutes=1)
-
-        if settings.STD_HOUR_START > settings.STD_HOUR_END:
-            std_end += timedelta(days=1)
+        std_start = time(hour=settings.STD_HOUR_START)
+        std_end = time(hour=settings.STD_HOUR_END)
 
         minutes = 0
-
-        while record_start < record_end:
-            if std_start <= record_start < std_end:
+        for minute in range(t_minutes):
+            cond_1 = std_start <= record_start.time() < std_end
+            # excluding end_limit
+            cond_2 = (record_start + timedelta(minutes=1)).time() < std_end
+            if all([cond_1, cond_2]):
                 minutes += 1
             record_start += timedelta(minutes=1)
-            if record_start.day != std_start.day:
-                std_start += timedelta(days=1)
-                std_end += timedelta(days=1)
         return minutes
 
     def __str__(self):

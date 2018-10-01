@@ -48,8 +48,15 @@ def make_call_record(make_call):
     start = timezone.now().isoformat()
     end = (timezone.now() + timezone.timedelta(minutes=5)).isoformat()
 
-    def _make_call_record(start_timestamp=start, end_timestamp=end):
-        call = make_call()
+    settings.STD_HOUR_START = 6
+    settings.STD_HOUR_END = 22
+    settings.STD_STANDING_CHARGE = 0.36
+    settings.RDC_STANDING_CHARGE = 0.36
+    settings.STD_MINUTE_CHARGE = 0.09
+
+    def _make_call_record(start_timestamp=start, end_timestamp=end, id='42',
+                          source = '99988526423', destination = '9993468278'):
+        call = make_call(id=id, source=source, destination=destination)
         models.Record.objects.create(
             call=call,
             type=models.Record.START,

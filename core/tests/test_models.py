@@ -73,7 +73,7 @@ class TestRecord:
         record = Record.objects.create(
             call=start_record.call,
             type=Record.END,
-            timestamp='2016-02-29T12:00:00.0Z'
+            timestamp='2016-02-29T12:02:00.0Z'
         )
         assert isinstance(record, Record)
 
@@ -102,7 +102,43 @@ class TestRecord:
                 type=Record.END,
                 timestamp='2016-02-20T12:00:00.0Z'
             )
-        error_msg = 'Timestamp of end record cannot be less than start record'
+        error_msg = ('Timestamp of end record cannot be less or equal '
+                     'to start record')
+        assert error_msg in str(excinfo)
+
+    def test_records_timestamps_cannot_be_equal(self, make_start_record):
+        with pytest.raises(ValidationError) as excinfo:
+            start_record = make_start_record(
+                timestamp='2016-02-29T12:00:00.0Z'
+            )
+
+            Record.objects.create(
+                call=start_record.call,
+                type=Record.END,
+                timestamp='2016-02-29T12:00:00.0Z'
+            )
+        error_msg = ('Timestamp of end record cannot be less or equal to'
+                     ' start record')
+        assert error_msg in str(excinfo)
+
+    def test_unique_timestamp_for_source(self, make_call_record):
+        with pytest.raises(ValidationError) as excinfo:
+            make_call_record(
+                id='42',
+                source='99988526423',
+                destination='9993468278',
+                start_timestamp='2017-12-12T04:57:13Z',
+                end_timestamp='2017-12-12T06:10:56Z'
+            )
+            make_call_record(
+                id='43',
+                source='99988526423',
+                destination='9993468278',
+                start_timestamp='2017-12-12T04:57:13Z',
+                end_timestamp='2017-12-12T06:10:56Z'
+            )
+        error_msg = ('There is already a start record for this source and '
+                     'timestamp')
         assert error_msg in str(excinfo)
 
 
@@ -145,7 +181,7 @@ class TestBillModel:
         expected = 73
         assert bill.total_minutes == expected
 
-    def test_standard_minutes_after_std_end_limit_hour(self, make_call_record):
+    def test_standard_minutes_after_end_limit_hour(self, make_call_record):
         """
         Should not consider minutes after standard end limit hour
         """
@@ -157,8 +193,7 @@ class TestBillModel:
         expected = 2
         assert bill.standard_minutes() == expected
 
-    def test_standard_minutes_before_std_start_limit_hour(self,
-                                                          make_call_record):
+    def test_standard_minutes_before_start_limit_hour(self, make_call_record):
         """
         Should not consider minutes before standard start limit hour
         """
@@ -168,6 +203,44 @@ class TestBillModel:
         )
         bill = Bill.objects.get(call=call_record)
         expected = 5
+        assert bill.standard_minutes() == expected
+
+    def test_standard_minutes_at_start_limit_hour(self, make_call_record):
+        """
+        Should consider the completed 60 seconds cycle when call start at
+        start limit hour
+        """
+        call_record = make_call_record(
+            start_timestamp='2018-02-28T06:00:00Z',
+            end_timestamp='2018-02-28T06:01:50Z'
+        )
+        bill = Bill.objects.get(call=call_record)
+        expected = 1
+        assert bill.standard_minutes() == expected
+
+    def test_standard_minutes_less_than_minute_cycle(self, make_call_record):
+        """
+        Should not consider if less than 60 seconds cycle
+        """
+        call_record = make_call_record(
+            start_timestamp='2018-02-28T08:00:00Z',
+            end_timestamp='2018-02-28T08:00:50Z'
+        )
+        bill = Bill.objects.get(call=call_record)
+        expected = 0
+        assert bill.standard_minutes() == expected
+
+    def test_standard_minutes_between_sdt_start_limit(self, make_call_record):
+        """
+        Should consider only the completed minutes from the limit start to
+        the end of the call.
+        """
+        call_record = make_call_record(
+            start_timestamp='2017-12-12T04:57:13Z',
+            end_timestamp='2017-12-12T06:10:56Z'
+        )
+        bill = Bill.objects.get(call=call_record)
+        expected = 10
         assert bill.standard_minutes() == expected
 
     def test_standard_minutes_minute_cycle(self, make_call_record):
@@ -182,6 +255,20 @@ class TestBillModel:
         expected = 10
         assert bill.standard_minutes() == expected
 
+    def test_standard_minutes_change_limits(self, make_call_record):
+        """
+        Should adapt to the new limits
+        """
+        call_record = make_call_record(
+            start_timestamp='2017-12-12T11:57:26Z',
+            end_timestamp='2017-12-12T12:10:13Z'
+        )
+        settings.STD_HOUR_START = 8
+        settings.STD_HOUR_END = 12
+        bill = Bill.objects.get(call=call_record)
+        expected = 2
+        assert bill.standard_minutes() == expected
+
     def test_standard_minutes_different_days(self, make_call_record):
         """
         Should consider the completed 60 seconds cycle
@@ -191,7 +278,7 @@ class TestBillModel:
             end_timestamp='2018-03-01T22:10:56Z'
         )
         bill = Bill.objects.get(call=call_record)
-        expected = 962
+        expected = 961
         assert bill.standard_minutes() == expected
 
     def test_standing_charge_standard(self, make_call_record):
@@ -200,7 +287,7 @@ class TestBillModel:
             end_timestamp='2017-12-12T21:10:13Z'
         )
         bill = Bill.objects.get(call=call_record)
-        expected = settings.STD_STANDING_CHARGE
+        expected = 0.36
         assert bill.standing_charge() == expected
 
     def test_standing_charge_reduced(self, make_call_record):
@@ -209,7 +296,7 @@ class TestBillModel:
             end_timestamp='2017-12-12T23:10:13Z'
         )
         bill = Bill.objects.get(call=call_record)
-        expected = settings.RDC_STANDING_CHARGE
+        expected = 0.36
         assert bill.standing_charge() == expected
 
     def test_calculate_price_all_standard(self, make_call_record):
@@ -218,8 +305,8 @@ class TestBillModel:
             end_timestamp='2017-12-12T11:05:00Z'
         )
         bill = Bill.objects.get(call=call_record)
-        tariff = Decimal(settings.STD_STANDING_CHARGE)
-        price_minute = Decimal('5') * Decimal(settings.STD_MINUTE_CHARGE)
+        tariff = Decimal('0.36')
+        price_minute = Decimal('5') * Decimal('0.09')
         expected = round(tariff + price_minute, 2)
         assert bill.price == expected
 

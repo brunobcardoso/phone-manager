@@ -3,3 +3,4 @@ omit =
     *apps.py,
     *migrations/*
     *tests*
+    *utils.py

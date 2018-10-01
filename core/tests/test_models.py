@@ -141,6 +141,25 @@ class TestRecord:
                      'timestamp')
         assert error_msg in str(excinfo)
 
+    def test_unique_timestamp_for_destination(self, make_call_record):
+        with pytest.raises(DRFValidationError) as excinfo:
+            make_call_record(
+                id='42',
+                source='99988526456',
+                destination='9993468278',
+                start_timestamp='2017-12-12T04:57:13Z',
+                end_timestamp='2017-12-12T06:10:56Z'
+            )
+            make_call_record(
+                id='43',
+                source='99988526423',
+                destination='9993468278',
+                start_timestamp='2017-12-12T04:57:13Z',
+                end_timestamp='2017-12-12T06:10:56Z'
+            )
+        error_msg = ('There is already a start record for this destination '
+                     'and timestamp')
+        assert error_msg in str(excinfo)
 
 @pytest.mark.django_db
 class TestBillModel:

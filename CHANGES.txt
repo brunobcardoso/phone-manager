@@ -1,6 +1,11 @@
 Phone Manager Changelog
 =======================
 
+Version 0.1.2
+--------------
+- Fix ValidationError 500 'server error' response.
+Add a custom exception handling for DRF validation errors
+
 Version 0.1.1
 -------------
 

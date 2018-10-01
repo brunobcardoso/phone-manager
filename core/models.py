@@ -2,7 +2,8 @@ from datetime import timedelta, time
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.validators import RegexValidator, ValidationError
+from django.core.validators import RegexValidator
+from rest_framework.exceptions import ValidationError
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -35,9 +36,7 @@ class Call(models.Model):
 
     def validate_source_destination(self):
         if self.source == self.destination:
-            raise ValidationError(
-                message='Source and Destination cannot be equal'
-            )
+            raise ValidationError('Source and Destination cannot be equal')
 
     def save(self, *args, **kwargs):
         self.clean_fields()

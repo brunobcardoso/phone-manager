@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 from django.conf import settings
 from django.core.validators import ValidationError
-
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from core.models import Call, Record, Bill
 
 
@@ -20,7 +20,7 @@ class TestCall:
         assert call.__str__() == f'{call.id}'
 
     def test_source_and_destination_cannot_be_equal(self, make_call):
-        with pytest.raises(expected_exception=ValidationError) as excinfo:
+        with pytest.raises(expected_exception=DRFValidationError) as excinfo:
             make_call(
                 source='99988526423',
                 destination='99988526423'
@@ -83,7 +83,7 @@ class TestRecord:
                                     f'{record.timestamp}')
 
     def test_invalid_end_record_when_no_start_record(self, make_call):
-        with pytest.raises(ValidationError) as excinfo:
+        with pytest.raises(DRFValidationError) as excinfo:
             Record.objects.create(
                 call=make_call(),
                 type=Record.END,
@@ -92,7 +92,7 @@ class TestRecord:
         assert 'There is no start record for this call' in str(excinfo)
 
     def test_invalid_end_record_timestamp(self, make_start_record):
-        with pytest.raises(ValidationError) as excinfo:
+        with pytest.raises(DRFValidationError) as excinfo:
             start_record = make_start_record(
                 timestamp='2016-02-29T12:00:00.0Z'
             )
@@ -107,7 +107,7 @@ class TestRecord:
         assert error_msg in str(excinfo)
 
     def test_records_timestamps_cannot_be_equal(self, make_start_record):
-        with pytest.raises(ValidationError) as excinfo:
+        with pytest.raises(DRFValidationError) as excinfo:
             start_record = make_start_record(
                 timestamp='2016-02-29T12:00:00.0Z'
             )
@@ -122,7 +122,7 @@ class TestRecord:
         assert error_msg in str(excinfo)
 
     def test_unique_timestamp_for_source(self, make_call_record):
-        with pytest.raises(ValidationError) as excinfo:
+        with pytest.raises(DRFValidationError) as excinfo:
             make_call_record(
                 id='42',
                 source='99988526423',

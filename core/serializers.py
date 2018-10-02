@@ -40,15 +40,6 @@ class StartRecordSerializer(CallSerializer):
             'destination': validated_data.get('destination')
         }
 
-        Record.objects.validade_unique_source_timestamp(
-            source=validated_data['source'],
-            timestamp=validated_data['timestamp']
-        )
-        Record.objects.validade_unique_destination_timestamp(
-            destination=validated_data['destination'],
-            timestamp=validated_data['timestamp']
-        )
-
         call = Call.objects.create(**call_data)
 
         record_data = {

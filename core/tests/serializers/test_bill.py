@@ -10,4 +10,4 @@ def test_bill_data(make_call_record):
 
     data = serializer.data[0]
     assert data.__len__() == 5
-    assert data['destination'] == '9993468278'
+    assert data['destination'] == '9933468278'

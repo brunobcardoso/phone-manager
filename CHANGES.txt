@@ -1,6 +1,12 @@
 Phone Manager Changelog
 =======================
 
+Version 0.1.5
+-------------
+- Fix phone number validator
+- Fix a bug where StartRecordSerializer would cause an inconsistent state
+partially saving only the call data if the record was invalid.
+
 Version 0.1.4
 -------------
 - Improve readability on tests
@@ -9,24 +15,24 @@ Version 0.1.4
 Version 0.1.3
 --------------
 - Fix typo in README
-Add missing validation test unique_timestamp_for_destination
+- Add missing validation test unique_timestamp_for_destination
 
 Version 0.1.2
 --------------
 - Fix ValidationError 500 'server error' response.
-Add a custom exception handling for DRF validation errors
+- Add a custom exception handling for DRF validation errors
 
 Version 0.1.1
 -------------
 
 - Add validation for source and destination timestamp
-Validates if exists a call record for the same source/destination and timestamp
+- Validates if exists a call record for the same source/destination and timestamp
 
 - Fix timestamp validation for endrecord
-Timestamp of end record cannot be equal to start record
+- Timestamp of end record cannot be equal to start record
 
 - Fix standard_minutes calculator
-It was not considering the completed 60 seconds cycle and limits changes.
+- It was not considering the completed 60 seconds cycle and limits changes.
 
 Version 0.1
 -----------

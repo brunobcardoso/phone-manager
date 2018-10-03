@@ -76,14 +76,14 @@ def test_unique_timestamp_for_source(make_call_record):
         make_call_record(
             id='42',
             source='99988526423',
-            destination='9993468278',
+            destination='9933468278',
             start_timestamp='2017-12-12T04:57:13Z',
             end_timestamp='2017-12-12T06:10:56Z'
         )
         make_call_record(
             id='43',
             source='99988526423',
-            destination='9993468278',
+            destination='9933468278',
             start_timestamp='2017-12-12T04:57:13Z',
             end_timestamp='2017-12-12T06:10:56Z'
         )
@@ -97,14 +97,14 @@ def test_unique_timestamp_for_destination(make_call_record):
         make_call_record(
             id='42',
             source='99988526456',
-            destination='9993468278',
+            destination='9933468278',
             start_timestamp='2017-12-12T04:57:13Z',
             end_timestamp='2017-12-12T06:10:56Z'
         )
         make_call_record(
             id='43',
             source='99988526423',
-            destination='9993468278',
+            destination='9933468278',
             start_timestamp='2017-12-12T04:57:13Z',
             end_timestamp='2017-12-12T06:10:56Z'
         )

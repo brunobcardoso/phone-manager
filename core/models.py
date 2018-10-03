@@ -3,10 +3,10 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.validators import RegexValidator
-from rest_framework.exceptions import ValidationError
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from rest_framework.exceptions import ValidationError
 
 
 class Call(models.Model):
@@ -14,7 +14,7 @@ class Call(models.Model):
     Stores a call entry
     """
     phone_validator = RegexValidator(
-        regex=r'(^[1-9]{2})([1-9]\d{7,8}$)',
+        regex=r'^(([1-9]{2})(?:[2-8]|9[1-9])[0-9]{7})$',
         message='Invalid phone number. Valid format is composed of 10 or 11 '
                 'digits. ie: AAXXXXXXXXX, where AA is the area code and '
                 'XXXXXXXXX is the phone number')

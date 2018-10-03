@@ -9,7 +9,7 @@ def test_call_creation():
     call = Call.objects.create(
         id='42',
         source='99988526423',
-        destination='9993468278')
+        destination='9933468278')
 
     assert isinstance(call, Call)
     assert call.call_id == call.id
@@ -52,6 +52,20 @@ def test_invalid_phone_number_format(make_call):
         make_call(
             source='darth vader',
             destination='luke skywalker'
+        )
+    assert 'source' in str(excinfo)
+    assert 'destination' in str(excinfo)
+    assert 'Invalid phone number.' in str(excinfo)
+
+
+def test_invalid_mobile_number_without_nine_digit(make_call):
+    """
+    All mobile phone numbers start with the 9(nine) digit
+    """
+    with pytest.raises(ValidationError) as excinfo:
+        make_call(
+            source='1199526423',
+            destination='1199326400'
         )
     assert 'source' in str(excinfo)
     assert 'destination' in str(excinfo)

@@ -7,7 +7,7 @@ def test_create_start_record_success(client):
         'call_id': 42,
         'timestamp': '2018-09-25T08:28:00Z',
         'source': '11987665433',
-        'destination': '11928736537'
+        'destination': '9933468278'
     }
     response = client.post('/records', data)
     assert response.status_code == 201

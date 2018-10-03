@@ -21,7 +21,7 @@ def enable_db_access_for_all_tests(db):
 @pytest.mark.django_db
 @pytest.fixture()
 def make_call():
-    def _make_call(id='42', source='99988526423', destination='9993468278'):
+    def _make_call(id='42', source='99988526423', destination='9933468278'):
         call = models.Call.objects.create(
             id=id,
             source=source,
@@ -58,7 +58,7 @@ def make_call_record(make_call):
     settings.STD_MINUTE_CHARGE = 0.09
 
     def _make_call_record(start_timestamp=start, end_timestamp=end, id='42',
-                          source = '99988526423', destination = '9993468278'):
+                          source = '99988526423', destination = '9933468278'):
         call = make_call(id=id, source=source, destination=destination)
         models.Record.objects.create(
             call=call,

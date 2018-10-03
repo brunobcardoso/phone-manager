@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from core.models import Call, Record, Bill
@@ -34,21 +35,21 @@ class StartRecordSerializer(CallSerializer):
         exclude = ('call',)
 
     def create(self, validated_data):
-        call_data = {
-            'id': validated_data.get('call_id'),
-            'source': validated_data.get('source'),
-            'destination': validated_data.get('destination')
-        }
+        with transaction.atomic():
+            call_data = {
+                'id': validated_data.get('call_id'),
+                'source': validated_data.get('source'),
+                'destination': validated_data.get('destination')
+            }
 
-        call = Call.objects.create(**call_data)
+            call = Call.objects.create(**call_data)
+            record_data = {
+                'call': call,
+                'type': validated_data.get('type'),
+                'timestamp': validated_data.get('timestamp')
+            }
 
-        record_data = {
-            'call': call,
-            'type': validated_data.get('type'),
-            'timestamp': validated_data.get('timestamp')
-        }
-
-        Record.objects.create(**record_data)
+            Record.objects.create(**record_data)
 
         return validated_data
 

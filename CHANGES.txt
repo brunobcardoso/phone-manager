@@ -1,6 +1,11 @@
 Phone Manager Changelog
 =======================
 
+Version 0.1.6
+-------------
+- Add unique ongoing call validation
+- Fix record overlapping
+
 Version 0.1.5
 -------------
 - Fix phone number validator

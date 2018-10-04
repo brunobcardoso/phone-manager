@@ -59,6 +59,22 @@ class RecordManager(models.Manager):
         timestamp = self.get(call__id=call_id, type=type).timestamp
         return timestamp
 
+    def last_source_record_type(self, call):
+        """
+        Returns the last record type for a source
+        """
+        return self.filter(
+            call__source=call.source
+        ).values_list('type', flat=True).last()
+
+    def last_destination_record_type(self, call):
+        """
+        Returns the last record type for a destination
+        """
+        return self.filter(
+            call__destination=call.destination
+        ).values_list('type', flat=True).last()
+
 
 class Record(models.Model):
     """
@@ -133,12 +149,36 @@ class Record(models.Model):
             raise ValidationError('There is already a start record for this '
                                   'destination and timestamp')
 
+    def validate_unique_start_record_for_source(self):
+        """
+        Checks if exists a ongoing call for the same source
+        """
+        if self.type == Record.START:
+            last_type = Record.objects.last_source_record_type(call=self.call)
+            if last_type == Record.START:
+                raise ValidationError('There is already an ongoing call from '
+                                      'this source')
+
+    def validate_unique_start_record_for_destination(self):
+        """
+        Checks if exists a ongoing call for the same destination
+        """
+        if self.type == Record.START:
+            last_type = Record.objects.last_destination_record_type(
+                call=self.call
+            )
+            if last_type == Record.START:
+                raise ValidationError('There is already an ongoing call for '
+                                      'this destination')
+
     def save(self, *args, **kwargs):
         self.clean_fields()
         self.validate_exists_start_record_before_end_record()
         self.validate_timestamp_end_record()
         self.validate_unique_source_timestamp()
         self.validate_unique_destination_timestamp()
+        self.validate_unique_start_record_for_source()
+        self.validate_unique_start_record_for_destination()
         super(Record, self).save(*args, **kwargs)
 
 

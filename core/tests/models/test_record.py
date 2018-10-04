@@ -111,3 +111,40 @@ def test_unique_timestamp_for_destination(make_call_record):
     error_msg = ('There is already a start record for this destination '
                  'and timestamp')
     assert error_msg in str(excinfo)
+
+
+def test_unique_start_record_for_source(make_start_record):
+    with pytest.raises(DRFValidationError) as excinfo:
+        make_start_record(
+            id='42',
+            source='99988526456',
+            destination='9933468278',
+            timestamp='2017-12-12T04:57:13Z',
+        )
+        make_start_record(
+            id='43',
+            source='99988526456',
+            destination='1133468279',
+            timestamp='2017-12-12T05:17:13Z',
+        )
+    error_msg = ('There is already an ongoing call from this source')
+    assert error_msg in str(excinfo)
+
+
+def test_unique_start_record_for_destination(make_start_record):
+    with pytest.raises(DRFValidationError) as excinfo:
+        make_start_record(
+            id='42',
+            source='99988526456',
+            destination='9933468278',
+            timestamp='2017-12-12T04:57:13Z',
+        )
+        make_start_record(
+            id='43',
+            source='99988526000',
+            destination='9933468278',
+            timestamp='2017-12-12T05:17:13Z',
+        )
+    error_msg = ('There is already an ongoing call for this destination')
+    assert error_msg in str(excinfo)
+

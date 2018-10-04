@@ -14,9 +14,11 @@ def pytest_configure():
     settings.DEBUG = False
     django.setup()
 
+
 @pytest.fixture(autouse=True)
 def enable_db_access_for_all_tests(db):
     pass
+
 
 @pytest.mark.django_db
 @pytest.fixture()
@@ -34,8 +36,11 @@ def make_call():
 
 @pytest.fixture()
 def make_start_record(make_call):
-    def _make_start_record(timestamp=timezone.now().isoformat()):
-        call = make_call()
+    start = timezone.now().isoformat()
+
+    def _make_start_record(timestamp=start, id='42', source='99988526423',
+                           destination='9933468278'):
+        call = make_call(id=id, source=source, destination=destination)
         start_record = models.Record.objects.create(
             call=call,
             type=models.Record.START,
@@ -58,7 +63,7 @@ def make_call_record(make_call):
     settings.STD_MINUTE_CHARGE = 0.09
 
     def _make_call_record(start_timestamp=start, end_timestamp=end, id='42',
-                          source = '99988526423', destination = '9933468278'):
+                          source='99988526423', destination='9933468278'):
         call = make_call(id=id, source=source, destination=destination)
         models.Record.objects.create(
             call=call,

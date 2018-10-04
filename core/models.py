@@ -59,6 +59,52 @@ class RecordManager(models.Manager):
         timestamp = self.get(call__id=call_id, type=type).timestamp
         return timestamp
 
+    def last_source_record_type(self, call):
+        """
+        Returns the last record type for a source
+        """
+        return self.filter(
+            call__source=call.source
+        ).values_list('type', flat=True).last()
+
+    def last_destination_record_type(self, call):
+        """
+        Returns the last record type for a destination
+        """
+        return self.filter(
+            call__destination=call.destination
+        ).values_list('type', flat=True).last()
+
+    def type_less_than(self, call, timestamp, phone):
+        """
+        Returns the first type of a record less than a given timestamp
+        """
+        if phone == 'source':
+            return self.filter(
+                call__source=call.source,
+                timestamp__lt=timestamp
+            ).order_by('timestamp').values_list('type', flat=True).last()
+        else:
+            return self.filter(
+                call__destination=call.destination,
+                timestamp__lt=timestamp
+            ).order_by('timestamp').values_list('type', flat=True).last()
+
+    def type_greater_than(self, call, timestamp, phone):
+        """
+        Returns the first type of a record greater than a given timestamp
+        """
+        if phone == 'source':
+            return self.filter(
+                call__source=call.source,
+                timestamp__gte=timestamp
+            ).order_by('timestamp').values_list('type', flat=True).first()
+        else:
+            return self.filter(
+                call__destination=call.destination,
+                timestamp__gte=timestamp
+            ).order_by('timestamp').values_list('type', flat=True).first()
+
 
 class Record(models.Model):
     """
@@ -133,12 +179,83 @@ class Record(models.Model):
             raise ValidationError('There is already a start record for this '
                                   'destination and timestamp')
 
+    def validate_unique_start_record_for_source(self):
+        """
+        Checks if exists a ongoing call for the same source
+        """
+        if self.type == Record.START:
+            last_type = Record.objects.last_source_record_type(call=self.call)
+            if last_type == Record.START:
+                raise ValidationError('There is already an ongoing call from '
+                                      'this source')
+
+    def validate_unique_start_record_for_destination(self):
+        """
+        Checks if exists a ongoing call for the same destination
+        """
+        if self.type == Record.START:
+            last_type = Record.objects.last_destination_record_type(
+                call=self.call
+            )
+            if last_type == Record.START:
+                raise ValidationError('There is already an ongoing call for '
+                                      'this destination')
+
+    def validate_overlapping_record_for_source(self):
+        """
+        Checks if a call does not overlap an existent record
+        """
+        type_less_than = Record.objects.type_less_than(
+            call=self.call,
+            timestamp=self.timestamp,
+            phone='source'
+        )
+        type_greater_than = Record.objects.type_greater_than(
+            call=self.call,
+            timestamp=self.timestamp,
+            phone='source'
+        )
+        if type_less_than == Record.START and type_greater_than == Record.END:
+            raise ValidationError('There is already a call record for this '
+                                  'source in this interval.')
+        elif type_less_than == Record.END and self.type == Record.END:
+                raise ValidationError('Cannot end this call overlapping '
+                                      'another call record with the same '
+                                      'source')
+
+    def validate_overlapping_record_for_destination(self):
+        """
+        Checks if a call does not overlap an existent range of dates
+        """
+        type_less_than = Record.objects.type_less_than(
+            call=self.call,
+            timestamp=self.timestamp,
+            phone='destination'
+        )
+        type_greater_than = Record.objects.type_greater_than(
+            call=self.call,
+            timestamp=self.timestamp,
+            phone='destination'
+        )
+        if type_less_than == Record.START and type_greater_than == Record.END:
+            raise ValidationError('There is already a call record for this '
+                                  'destination in this interval.')
+        elif type_less_than == Record.END and self.type == Record.END:
+                raise ValidationError('Cannot end this call overlapping '
+                                      'another call record with the same '
+                                      'destination')
+
+
     def save(self, *args, **kwargs):
         self.clean_fields()
         self.validate_exists_start_record_before_end_record()
         self.validate_timestamp_end_record()
         self.validate_unique_source_timestamp()
         self.validate_unique_destination_timestamp()
+        self.validate_unique_start_record_for_source()
+        self.validate_unique_start_record_for_destination()
+        self.validate_overlapping_record_for_source()
+        self.validate_overlapping_record_for_destination()
         super(Record, self).save(*args, **kwargs)
 
 
